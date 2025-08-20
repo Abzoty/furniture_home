@@ -2,14 +2,14 @@
 
 # Tasks:
 ## Abdelrahman
-category, product, product_img <br>
-favorite <br>
-cart, cartItem <br>
-order, orderItem, orderStatusHistory <br>
-paymentDetails <br>
 
+1. category, product, product_img
+2. favorite
+3. cart, cartItem
+4. order,orderItem, orderStatusHistory
+5. paymentDetails
 ## Yousef
-user(login, sign up, Logout,reset password, update profile) <br>
-enquiry submit <br>
-review <br>
-storeSettings <br>
+1. user (login, sign up, Logout, reset password, update profile)
+2. enquiry submit
+3. review
+4. storeSettings
