@@ -63,7 +63,7 @@ Route::delete('/delete/product/{id}', function ($id) {
 
 //region User CRUD API Routes
 // Route to Create a new user
-Route::post('/add/user', function (Request $request) {
+Route::post('/user', function (Request $request) {
     try {
         $user = new User();
         $user->name = $request->input('name');
@@ -96,7 +96,7 @@ Route::get('/user/{id}', function ($id) {
 });
 
 // Route to Update an existing user
-Route::put('/update/user/{id}', function (Request $request, $id) {
+Route::put('/user/{id}', function (Request $request, $id) {
     $user = User::find($id);
     if ($user) {
         $user->name = $request->input('name');
@@ -111,7 +111,7 @@ Route::put('/update/user/{id}', function (Request $request, $id) {
 });
 
 // Route to Delete a user
-Route::delete('/delete/user/{id}', function ($id) {
+Route::delete('/user/{id}', function ($id) {
     $user = User::find($id);
     if ($user) {
         $user->delete();
