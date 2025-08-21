@@ -1,6 +1,7 @@
 # Data base name  "furniture_home" <br>
 
 # Tasks:
+``make all migrations and models``
 ## Abdelrahman
 
 1. category, product, product_img
