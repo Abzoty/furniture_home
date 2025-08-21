@@ -14,3 +14,6 @@
 2. enquiry submit
 3. review
 4. storeSettings
+
+
+clone the repo then run ``composer install`` then all should work fine!
