@@ -1,64 +1,26 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\Product;
 use App\Models\User;
 
+//region Category CRUD API Routes
+Route::post('/category', [CategoryController::class, 'store']);
+Route::get('/category', [CategoryController::class, 'index']);
+Route::get('/category/{id}', [CategoryController::class, 'show']);
+Route::put('/category/{id}', [CategoryController::class, 'update']);
+Route::delete('/category/{id}', [CategoryController::class, 'destroy']);
+//endregion
+
 //region Product CRUD API Routes
-// Route to Create a new product
-Route::post('/add/product', function (Request $request) {
-    try {
-        $product = new Product();
-        $product->name = $request->input('name');
-        $product->description = $request->input('description');
-        $product->price = $request->input('price');
-        $product->save();
-
-        return response()->json(['message' => 'Product added successfully']);
-
-    } catch (\Exception $e) {
-        return response()->json(['message' => 'Error adding product' . $e->getMessage()], 500);
-    }
-});
-
-// Route to Read all existing products
-Route::get('/products', function () {
-    $products = Product::all();
-    return response()->json($products);
-});
-
-// Route to Read a specific product
-Route::get('/product/{id}', function ($id) {
-    $product = Product::find($id);
-    if ($product) {
-        return response()->json($product);
-    }
-    return response()->json(['message' => 'Product not found'], 404);
-});
-
-// Route to Update an existing product
-Route::put('/update/product/{id}', function (Request $request, $id) {
-    $product = Product::find($id);
-    if ($product) {
-        $product->name = $request->input('name');
-        $product->description = $request->input('description');
-        $product->price = $request->input('price');
-        $product->save();
-        return response()->json(['message' => 'Product updated successfully']);
-    }
-    return response()->json(['message' => 'Product not found'], 404);
-});
-
-// Route to Delete a product
-Route::delete('/delete/product/{id}', function ($id) {
-    $product = Product::find($id);
-    if ($product) {
-        $product->delete();
-        return response()->json(['message' => 'Product deleted successfully']);
-    }
-    return response()->json(['message' => 'Product not found'], 404);
-});
+Route::post('/product', [ProductController::class, 'store']);
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/product/{id}', [ProductController::class, 'show']);
+Route::get('/product/details/{id}', [ProductController::class, 'showDetails']);
+Route::put('/product/{id}', [ProductController::class, 'update']);
+Route::delete('/product/{id}', [ProductController::class, 'destroy']);
 //endregion
 
 //region User CRUD API Routes
@@ -120,3 +82,4 @@ Route::delete('/user/{id}', function ($id) {
     return response()->json(['message' => 'User not found'], 404);
 });
 //endregion
+
