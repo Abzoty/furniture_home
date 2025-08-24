@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -8,7 +9,7 @@ use App\Models\User;
 
 //region Category CRUD API Routes
 Route::post('/category', [CategoryController::class, 'store']);
-Route::get('/category', [CategoryController::class, 'index']);
+Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/category/{id}', [CategoryController::class, 'show']);
 Route::put('/category/{id}', [CategoryController::class, 'update']);
 Route::delete('/category/{id}', [CategoryController::class, 'destroy']);
@@ -21,6 +22,13 @@ Route::get('/product/{id}', [ProductController::class, 'show']);
 Route::get('/product/details/{id}', [ProductController::class, 'showDetails']);
 Route::put('/product/{id}', [ProductController::class, 'update']);
 Route::delete('/product/{id}', [ProductController::class, 'destroy']);
+//endregion
+
+//region Favorites API Routes
+Route::post('/favorite', [FavoriteController::class, 'store']);
+Route::get('/favorites', [FavoriteController::class, 'index']);
+Route::get('/favorite/{id}', [FavoriteController::class, 'show']);
+Route::delete('/favorite/{id}', [FavoriteController::class, 'destroy']);
 //endregion
 
 //region User CRUD API Routes
