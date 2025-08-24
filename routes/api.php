@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
@@ -31,6 +33,21 @@ Route::get('/favorite/{id}', [FavoriteController::class, 'show']);
 Route::delete('/favorite/{id}', [FavoriteController::class, 'destroy']);
 //endregion
 
+//region Cart CRUD API Routes
+Route::post('/cart', [CartController::class, 'store']);
+Route::get('/carts', [CartController::class, 'index']);
+Route::get('/cart/{id}', [CartController::class, 'show']);
+Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+//endregion
+
+//region Cart-Item CRUD API Routes
+Route::post('/cart-item', [CartItemController::class, 'store']);
+Route::get('/cart-items', [CartItemController::class, 'index']);
+Route::get('/cart-item/{id}', [CartItemController::class, 'show']);
+Route::put('/cart-item/{id}', [CartItemController::class, 'update']);
+Route::delete('/cart-item/{id}', [CartItemController::class, 'destroy']);
+//endregion
+
 //region User CRUD API Routes
 // Route to Create a new user
 Route::post('/user', function (Request $request) {
@@ -44,7 +61,6 @@ Route::post('/user', function (Request $request) {
         $user->save();
 
         return response()->json(['message' => 'User added successfully']);
-
     } catch (\Exception $e) {
         return response()->json(['message' => 'Error adding user' . $e->getMessage()], 500);
     }
@@ -90,4 +106,3 @@ Route::delete('/user/{id}', function ($id) {
     return response()->json(['message' => 'User not found'], 404);
 });
 //endregion
-
