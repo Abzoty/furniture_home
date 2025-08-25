@@ -5,6 +5,7 @@ use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
@@ -45,6 +46,13 @@ Route::get('/cart-items', [CartItemController::class, 'index']);
 Route::get('/cart-item/{id}', [CartItemController::class, 'show']);
 Route::put('/cart-item/{id}', [CartItemController::class, 'update']);
 Route::delete('/cart-item/{id}', [CartItemController::class, 'destroy']);
+//endregion
+
+//region Cart-Item CRUD API Routes
+Route::post('/order', [OrderController::class, 'store']);
+Route::get('/orders', [OrderController::class, 'index']);
+Route::get('/order/{id}', [OrderController::class, 'show']);
+Route::delete('/order/{id}', [OrderController::class, 'destroy']);
 //endregion
 
 //region User CRUD API Routes

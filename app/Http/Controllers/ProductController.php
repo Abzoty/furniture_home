@@ -95,9 +95,9 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::find($id);
-        $product_categories = ProductCategory::where('product_id', $id)->get();
-        $product_images = ProductImage::where('product_id', $id)->get();
         if ($product) {
+            $product_categories = ProductCategory::where('product_id', $id)->get();
+            $product_images = ProductImage::where('product_id', $id)->get();
             return response()->json([
                 'product' => $product,
                 'product_categories' => $product_categories,
