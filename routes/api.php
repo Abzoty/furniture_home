@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderStatusHistoryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
@@ -53,6 +54,13 @@ Route::post('/order', [OrderController::class, 'store']);
 Route::get('/orders', [OrderController::class, 'index']);
 Route::get('/order/{id}', [OrderController::class, 'show']);
 Route::delete('/order/{id}', [OrderController::class, 'destroy']);
+//endregion
+
+//region Cart-Item CRUD API Routes
+Route::get('/order-statuses', [OrderStatusHistoryController::class, 'index']);
+Route::get('/order-status/{id}', [OrderStatusHistoryController::class, 'show']);
+Route::put('/order-status/{id}', [OrderStatusHistoryController::class, 'update']);
+Route::delete('/order-status/{id}', [OrderStatusHistoryController::class, 'destroy']);
 //endregion
 
 //region User CRUD API Routes

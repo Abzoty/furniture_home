@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,12 @@ class OrderController extends Controller
             $order->status = $request->input('status');
             $order->total_amount = $orderTotal;
             $order->save(); // Save once to get ID
+
+            // Create status history
+            $order_status = new OrderStatusHistory();
+            $order_status->order_id = $order->id;
+            $order_status->status = $request->input('status');
+            $order_status->save();            
 
             // Create order items
             foreach ($orderItems as $itemData) {
