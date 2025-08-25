@@ -25,6 +25,11 @@ class CategoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
         ]);
+
+        $test_category = Category::where('name', $request->input('name'))->first();
+        if ($test_category) {
+            return response()->json(['message' => 'Category already exists'], 409);
+        }
         
         try{
             $category = new Category();

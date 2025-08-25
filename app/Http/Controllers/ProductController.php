@@ -17,6 +17,10 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::all();
+        foreach ($products as $product) {
+            $product->image = ProductImage::where('product_id', $product->id)->first()->value('image_url');
+        }
+
         return response()->json($products);
         // return view('products.index', compact('products'));
     }
@@ -91,15 +95,6 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::find($id);
-        if ($product) {
-            return response()->json($product);
-        }
-        return response()->json(['message' => 'Product not found'], 404);
-    }
-
-    public function showDetails($id)
-    {
-        $product = Product::find($id);
         $product_categories = ProductCategory::where('product_id', $id)->get();
         $product_images = ProductImage::where('product_id', $id)->get();
         if ($product) {
@@ -111,6 +106,7 @@ class ProductController extends Controller
         }
         return response()->json(['message' => 'Product not found'], 404);
     }
+
 
     /**
      * Update the specified resource in storage.
