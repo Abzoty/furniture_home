@@ -14,7 +14,6 @@ use App\Http\Controllers\StoreSettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
-use Faker\Provider\ar_EG\Payment;
 
 //region Category CRUD API Routes
 Route::post('/category', [CategoryController::class, 'store']);
