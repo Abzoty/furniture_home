@@ -7,6 +7,7 @@ use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderStatusHistoryController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
@@ -49,18 +50,26 @@ Route::put('/cart-item/{id}', [CartItemController::class, 'update']);
 Route::delete('/cart-item/{id}', [CartItemController::class, 'destroy']);
 //endregion
 
-//region Cart-Item CRUD API Routes
+//region Order CRUD API Routes
 Route::post('/order', [OrderController::class, 'store']);
 Route::get('/orders', [OrderController::class, 'index']);
 Route::get('/order/{id}', [OrderController::class, 'show']);
 Route::delete('/order/{id}', [OrderController::class, 'destroy']);
 //endregion
 
-//region Cart-Item CRUD API Routes
+//region Order-Status CRUD API Routes
 Route::get('/order-statuses', [OrderStatusHistoryController::class, 'index']);
 Route::get('/order-status/{id}', [OrderStatusHistoryController::class, 'show']);
 Route::put('/order-status/{id}', [OrderStatusHistoryController::class, 'update']);
 Route::delete('/order-status/{id}', [OrderStatusHistoryController::class, 'destroy']);
+//endregion
+
+//region Payment CRUD API Routes
+Route::post('/payment', [PaymentController::class, 'store']);
+Route::get('/payments', [PaymentController::class, 'index']);
+Route::get('/payment/{id}', [PaymentController::class, 'show']);
+Route::put('/payment/{id}', [PaymentController::class, 'update']);
+Route::delete('/payment/{id}', [PaymentController::class, 'destroy']);
 //endregion
 
 //region User CRUD API Routes
