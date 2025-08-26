@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderStatusHistoryController;
 use App\Http\Controllers\PaymentController;  
 use App\Http\Controllers\ReviewController;   
 use App\Http\Controllers\EnquiryController;   
+use App\Http\Controllers\StoreSettingController;   
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
@@ -89,6 +90,14 @@ Route::get('/reviews', [ReviewController::class, 'index']);
 Route::get('/review/{id}', [ReviewController::class, 'show']);
 Route::put('/review/{id}', [ReviewController::class, 'update']);
 Route::delete('/review/{id}', [ReviewController::class, 'destroy']);
+//endregion
+
+//region Store-Setting CRUD API Routes
+Route::post('/store', [StoreSettingController::class, 'store']);
+Route::get('/stores', [StoreSettingController::class, 'index']);
+Route::get('/store/{id}', [StoreSettingController::class, 'show']);
+Route::put('/store/{id}', [StoreSettingController::class, 'update']);
+Route::delete('/store/{id}', [StoreSettingController::class, 'destroy']);
 //endregion
 
 //region User CRUD API Routes
