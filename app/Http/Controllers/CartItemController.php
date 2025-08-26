@@ -51,6 +51,7 @@ class CartItemController extends Controller
 
             return response()->json(['message' => 'Cart item added successfully'], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json(['message' => 'Error adding cart item: ' . $e->getMessage()], 500);
         }
     }
@@ -103,6 +104,7 @@ class CartItemController extends Controller
 
             return response()->json(['message' => 'Cart item updated successfully']);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json(['message' => 'Error updating cart item: ' . $e->getMessage()], 500);
         }
     }
@@ -127,6 +129,7 @@ class CartItemController extends Controller
             
             return response()->json(['message' => 'Cart item deleted successfully']);
         } else {
+            DB::rollBack();
             return response()->json(['message' => 'Cart item not found'], 404);
         }
     }

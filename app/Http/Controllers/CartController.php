@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -60,6 +61,7 @@ class CartController extends Controller
     {
         $cart = Cart::find($id);
         if ($cart) {
+            $cart->items = CartItem::where('cart_id', $id)->get();
             return response()->json($cart);
         } else {
             return response()->json(['message' => 'Cart not found'], 404);
