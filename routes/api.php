@@ -6,11 +6,14 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\OrderStatusHistoryController;
-use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\OrderStatusHistoryController;  
+use App\Http\Controllers\PaymentController;  
+use App\Http\Controllers\ReviewController;   
+use App\Http\Controllers\EnquiryController;   
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
+use Faker\Provider\ar_EG\Payment;
 
 //region Category CRUD API Routes
 Route::post('/category', [CategoryController::class, 'store']);
@@ -72,6 +75,22 @@ Route::put('/payment/{id}', [PaymentController::class, 'update']);
 Route::delete('/payment/{id}', [PaymentController::class, 'destroy']);
 //endregion
 
+//region Enquiry CRUD API Routes
+Route::post('/enquiry', [EnquiryController::class, 'store']);
+Route::get('/enquires', [EnquiryController::class, 'index']);
+Route::get('/enquiry/{id}', [EnquiryController::class, 'show']);
+Route::put('/enquiry/{id}', [EnquiryController::class, 'update']);
+Route::delete('/enquiry/{id}', [EnquiryController::class, 'destroy']);
+//endregion
+
+//region Review CRUD API Routes
+Route::post('/review', [ReviewController::class, 'store']);
+Route::get('/reviews', [ReviewController::class, 'index']);
+Route::get('/review/{id}', [ReviewController::class, 'show']);
+Route::put('/review/{id}', [ReviewController::class, 'update']);
+Route::delete('/review/{id}', [ReviewController::class, 'destroy']);
+//endregion
+
 //region User CRUD API Routes
 // Route to Create a new user
 Route::post('/user', function (Request $request) {
@@ -130,3 +149,4 @@ Route::delete('/user/{id}', function ($id) {
     return response()->json(['message' => 'User not found'], 404);
 });
 //endregion
+
