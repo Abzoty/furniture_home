@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Favorite;
-use App\Models\User;
 use App\Traits\FiltersByRole;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class FavoriteController extends Controller
 {
@@ -49,7 +50,7 @@ class FavoriteController extends Controller
                 'product_id' => 'required|exists:products,id',
             ]);
 
-            $user = auth()->user();
+            $user = Auth::user();
 
             // Check if favorite already exists
             $existingFavorite = Favorite::where('customer_id', $user->id)

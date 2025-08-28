@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
-use App\Models\CartItem;
 use App\Models\User;
 use App\Traits\FiltersByRole;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
@@ -45,7 +46,7 @@ class CartController extends Controller
     public function store(Request $request)
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
 
             // Customers can only create carts for themselves
             if ($user->role === 'customer') {

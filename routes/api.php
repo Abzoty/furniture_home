@@ -7,12 +7,11 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\OrderStatusHistoryController;  
-use App\Http\Controllers\PaymentController;  
-use App\Http\Controllers\ReviewController;   
-use App\Http\Controllers\EnquiryController;   
-use App\Http\Controllers\StoreSettingController;   
-use Illuminate\Http\Request;
+use App\Http\Controllers\OrderStatusHistoryController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\EnquiryController;
+use App\Http\Controllers\StoreSettingController;
 use Illuminate\Support\Facades\Route;
 
 //region Authentication Routes
@@ -58,7 +57,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::get('/favorite/{id}', [FavoriteController::class, 'show']);
-    
+
     // Customer can create and delete favorites
     Route::middleware(['role:customer'])->group(function () {
         Route::post('/favorite', [FavoriteController::class, 'store']);
@@ -71,8 +70,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/carts', [CartController::class, 'index']);
     Route::get('/cart/{id}', [CartController::class, 'show']);
-    Route::post('/cart', [CartController::class, 'store']);
-    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+
+    // Customer can create and delete carts
+    Route::middleware(['role:customer'])->group(function () {
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+    });
 });
 //endregion
 
@@ -80,9 +83,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/cart-items', [CartItemController::class, 'index']);
     Route::get('/cart-item/{id}', [CartItemController::class, 'show']);
-    Route::post('/cart-item', [CartItemController::class, 'store']);
-    Route::put('/cart-item/{id}', [CartItemController::class, 'update']);
-    Route::delete('/cart-item/{id}', [CartItemController::class, 'destroy']);
+
+    Route::middleware(['role:customer'])->group(function () {
+        Route::post('/cart-item', [CartItemController::class, 'store']);
+        Route::put('/cart-item/{id}', [CartItemController::class, 'update']);
+        Route::delete('/cart-item/{id}', [CartItemController::class, 'destroy']);
+    });
 });
 //endregion
 
@@ -90,8 +96,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/order/{id}', [OrderController::class, 'show']);
-    Route::post('/order', [OrderController::class, 'store']);
-    Route::delete('/order/{id}', [OrderController::class, 'destroy']);
+
+    Route::middleware(['role:customer'])->group(function () {
+        Route::post('/order', [OrderController::class, 'store']);
+        Route::delete('/order/{id}', [OrderController::class, 'destroy']);
+    });
 });
 //endregion
 
@@ -99,8 +108,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/order-statuses', [OrderStatusHistoryController::class, 'index']);
     Route::get('/order-status/{id}', [OrderStatusHistoryController::class, 'show']);
-    Route::post('/order-status', [OrderStatusHistoryController::class, 'store']); // Customer can create status (auto with order)
-    
+    //Route::post('/order-status', [OrderStatusHistoryController::class, 'store']); // Customer can create status (auto with order)
+
     // Admin can update and delete order statuses
     Route::middleware(['role:admin'])->group(function () {
         Route::put('/order-status/{id}', [OrderStatusHistoryController::class, 'update']);
@@ -113,12 +122,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::get('/payment/{id}', [PaymentController::class, 'show']);
-    Route::post('/payment', [PaymentController::class, 'store']);
-    Route::delete('/payment/{id}', [PaymentController::class, 'destroy']);
-    
+    // Customer can create payments
+    Route::middleware(['role:customer'])->group(function () {
+        Route::post('/payment', [PaymentController::class, 'store']);
+    });
     // Admin can update payments
     Route::middleware(['role:admin'])->group(function () {
         Route::put('/payment/{id}', [PaymentController::class, 'update']);
+        Route::delete('/payment/{id}', [PaymentController::class, 'destroy']);
     });
 });
 //endregion
@@ -127,9 +138,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/enquiries', [EnquiryController::class, 'index']);
     Route::get('/enquiry/{id}', [EnquiryController::class, 'show']);
-    Route::post('/enquiry', [EnquiryController::class, 'store']);
-    Route::put('/enquiry/{id}', [EnquiryController::class, 'update']);
-    Route::delete('/enquiry/{id}', [EnquiryController::class, 'destroy']);
+
+    Route::middleware(['role:customer'])->group(function () {
+        Route::post('/enquiry', [EnquiryController::class, 'store']);
+        Route::put('/enquiry/{id}', [EnquiryController::class, 'update']);
+        Route::delete('/enquiry/{id}', [EnquiryController::class, 'destroy']);
+    });
 });
 //endregion
 
@@ -137,9 +151,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/reviews', [ReviewController::class, 'index']);
     Route::get('/review/{id}', [ReviewController::class, 'show']);
-    Route::post('/review', [ReviewController::class, 'store']);
-    Route::put('/review/{id}', [ReviewController::class, 'update']);
-    Route::delete('/review/{id}', [ReviewController::class, 'destroy']);
+
+    // Customer can create, update, and delete reviews
+    Route::middleware(['role:customer'])->group(function () {
+        Route::post('/review', [ReviewController::class, 'store']);
+        Route::put('/review/{id}', [ReviewController::class, 'update']);
+        Route::delete('/review/{id}', [ReviewController::class, 'destroy']);
+    });
 });
 //endregion
 
@@ -155,4 +173,3 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::delete('/store/{id}', [StoreSettingController::class, 'destroy']);
 });
 //endregion
-

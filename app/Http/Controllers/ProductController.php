@@ -8,6 +8,7 @@ use App\Models\ProductCategory;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controller;
 
 class ProductController extends Controller
 {
@@ -116,7 +117,7 @@ class ProductController extends Controller
     public function show($id)
     {
         try {
-            $product = Product::with(['categories.category', 'images'])->findOrFail($id);
+            $product = Product::with(['categories', 'images'])->findOrFail($id);
 
             return response()->json([
                 'message' => 'Product retrieved successfully',
@@ -198,7 +199,7 @@ class ProductController extends Controller
 
             DB::commit();
 
-            $product->load(['categories.category', 'images']);
+            $product->load(['categories', 'images']);
 
             return response()->json([
                 'message' => 'Product updated successfully',

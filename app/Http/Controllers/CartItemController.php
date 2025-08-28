@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Traits\FiltersByRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class CartItemController extends Controller
 {
@@ -24,7 +26,7 @@ class CartItemController extends Controller
     public function index()
     {
         try {
-            $user = auth()->user();
+            $user = Auth::user();
             
             if ($user->role === 'admin') {
                 $cartItems = CartItem::with(['cart', 'product'])->get();
@@ -56,12 +58,12 @@ class CartItemController extends Controller
     {
         try {
             $request->validate([
-                'cart_id' => 'required|exists:cart,id',
+                //'cart_id' => 'required|exists:cart,id',
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1',
             ]);
 
-            $cart = Cart::findOrFail($request->cart_id);
+            $cart = Cart::where('customer_id', Auth::user()->id)->firstOrFail();
             
             // Check if user can access this cart
             if (!$this->canAccessResource($cart)) {
@@ -96,7 +98,7 @@ class CartItemController extends Controller
             $product = Product::findOrFail($request->product_id);
             
             $cartItem = CartItem::create([
-                'cart_id' => $request->cart_id,
+                'cart_id' => $cart->id,
                 'product_id' => $request->product_id,
                 'quantity' => $request->quantity,
                 'total' => $product->price * $request->quantity

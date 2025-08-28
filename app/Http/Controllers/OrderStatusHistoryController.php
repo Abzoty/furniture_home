@@ -2,18 +2,52 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\OrderStatusHistory;
+use App\Traits\FiltersByRole;
+use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 
-class OrderStatusHistoryController extends Controller
+
+class OrderStatusHistoryController extends BaseController
 {
+    use FiltersByRole;
+
+    public function __construct()
+    {
+        $this->middleware(['auth:sanctum']);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $history = OrderStatusHistory::all();
-        return response()->json($history);
+        try {
+            $user = Auth::user();
+
+            if ($user->role === 'admin') {
+                $cartItems = OrderStatusHistory::with(['order'])->get();
+            } else {
+                // Customer can only see their own cart items
+                $cartItems = OrderStatusHistory::with(['Order'])
+                    ->whereHas('order', function ($query) use ($user) {
+                        $query->where('customer_id', $user->id);
+                    })->get();
+            }
+
+            return response()->json([
+                'message' => 'Order status history retrieved successfully',
+                'data' => $cartItems
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving Order status history items',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -21,11 +55,31 @@ class OrderStatusHistoryController extends Controller
      */
     public function show($id)
     {
-        $history = OrderStatusHistory::find($id);
-        if (!$history) {
-            return response()->json(['message' => 'Order status history not found'], 404);
+        try {
+            $history = OrderStatusHistory::findOrFail($id);
+
+            if (!$this->canAccessResource($history->order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only view your own Order status history.'
+                ], 403);
+            }
+
+            return response()->json([
+                'message' => 'Order status history retrieved successfully',
+                'data' => $history
+            ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order status history not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving order status history',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json($history);
     }
 
     /**
@@ -33,17 +87,43 @@ class OrderStatusHistoryController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|string|max:50|in:pending,confirmed,shipped,delivered,cancelled'
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|string|max:50|in:pending,confirmed,shipped,delivered,cancelled'
+            ]);
 
-        $history = OrderStatusHistory::find($id);
-        if ($history) {
-            $history->status = $request->input('status');
+            $history = OrderStatusHistory::findOrFail($id);
+
+            if (!$this->canAccessResource($history)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only update your own order history.'
+                ], 403);
+            }
+
+            $history->status = $request->status;
             $history->save();
-            return response()->json($history);
-        } else {
-            return response()->json(['message' => 'Order status history not found'], 404);
+
+            return response()->json([
+                'message' => 'Order status history updated successfully',
+                'data' => $history
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order status history not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error updating order status history',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -52,11 +132,31 @@ class OrderStatusHistoryController extends Controller
      */
     public function destroy($id)
     {
-        $order_history = OrderStatusHistory::find($id);
-        if ($order_history) {
-            $order_history->delete();
-            return response()->json(['message' => 'Order status history deleted successfully']);
+        try {
+            $history = OrderStatusHistory::with('order')->findOrFail($id);
+
+            if (!$this->canAccessResource($history->order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only delete your own order history.'
+                ], 403);
+            }
+
+            $history->delete();
+
+            return response()->json([
+                'message' => 'Order status history deleted successfully'
+            ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order status history not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error deleting order status history',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Order status history not found'], 404);
     }
 }

@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -47,6 +48,7 @@ class AuthController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Registration failed',
@@ -88,6 +90,7 @@ class AuthController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Login failed',
@@ -157,6 +160,7 @@ class AuthController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Profile update failed',
@@ -173,25 +177,32 @@ class AuthController extends Controller
         try {
             $request->validate(['email' => 'required|email']);
 
-            $status = Password::sendResetLink(
-                $request->only('email')
-            );
+            $user = User::where('email', $request->email)->first();
 
-            if ($status === Password::RESET_LINK_SENT) {
+            if (!$user) {
                 return response()->json([
-                    'message' => 'Password reset link sent to your email'
-                ], 200);
+                    'message' => 'User not found'
+                ], 404);
             }
 
-            return response()->json([
-                'message' => 'Unable to send reset link'
-            ], 400);
+            // Generate a reset token manually
+            $token = Str::random(60);
 
-        } catch (ValidationException $e) {
+            // Store token in password_reset_tokens table
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                [
+                    'email' => $user->email,
+                    'token' => Hash::make($token),
+                    'created_at' => now(),
+                ]
+            );
+
             return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
+                'message' => 'Password reset token generated',
+                'token' => $token, // send it back for testing
+                'email' => $user->email
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Password reset failed',
@@ -236,6 +247,7 @@ class AuthController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Password reset failed',

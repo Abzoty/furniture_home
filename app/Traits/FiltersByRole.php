@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 trait FiltersByRole
 {
@@ -11,7 +12,7 @@ trait FiltersByRole
      */
     protected function applyRoleFilters(Builder $query, $customerIdField = 'customer_id')
     {
-        $user = auth()->user();
+        $user = Auth::user();
         
         if (!$user) {
             return $query->whereRaw('1 = 0'); // Return empty result for unauthenticated users
@@ -35,7 +36,7 @@ trait FiltersByRole
      */
     protected function canAccessResource($resource, $customerIdField = 'customer_id')
     {
-        $user = auth()->user();
+        $user = Auth::user();
         
         if (!$user) {
             return false;
@@ -59,7 +60,7 @@ trait FiltersByRole
      */
     protected function setCustomerIdForRole(array &$data)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         
         if ($user && $user->role === 'customer') {
             $data['customer_id'] = $user->id;

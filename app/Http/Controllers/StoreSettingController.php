@@ -4,16 +4,37 @@ namespace App\Http\Controllers;
 
 use App\Models\StoreSetting;
 use Illuminate\Http\Request;
+use App\Traits\FiltersByRole;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Routing\Controller;
 
 class StoreSettingController extends Controller
 {
+    use FiltersByRole;
+
+    public function __construct()
+    {
+        $this->middleware(['auth:sanctum', 'role:admin'])->except(['index', 'show']);
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $storeSettings = StoreSetting::all();
-        return response()->json($storeSettings);
+        try {
+            $storeSettings = StoreSetting::all();
+
+            return response()->json([
+                'message' => 'Store settings retrieved successfully',
+                'data' => $storeSettings
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving store settings',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -21,21 +42,26 @@ class StoreSettingController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'logo_url' => 'required|string|max:500',
-            'about_image_url' => 'required|string|max:500',
-            'about_description' => 'required|string',
-            'terms_and_conditions' => 'required|string',
-            'facebook_url' => 'required|string|max:255',
-            'whatsapp_number' => 'required|string|max:20',
-            'phone_number' => 'required|string|max:20',
-            'second_phone_number' => 'required|string|max:20',
-        ]);
+        try{
+            $user = Auth::user();
 
-        //TODO: chick if user is admin
+            // Only admin can create store settings
+            if ($user->role !== 'admin') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
 
-        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'logo_url' => 'required|string|max:500',
+                'about_image_url' => 'required|string|max:500',
+                'about_description' => 'required|string',
+                'terms_and_conditions' => 'required|string',
+                'facebook_url' => 'required|string|max:255',
+                'whatsapp_number' => 'required|string|max:20',
+                'phone_number' => 'required|string|max:20',
+                'second_phone_number' => 'required|string|max:20',
+            ]);
+
             $storeSetting = new StoreSetting();
             $storeSetting->name = $request->input('name');
             $storeSetting->logo_url = $request->input('logo_url');
@@ -45,12 +71,14 @@ class StoreSettingController extends Controller
             $storeSetting->facebook_url = $request->input('facebook_url');
             $storeSetting->whatsapp_number = $request->input('whatsapp_number');
             $storeSetting->phone_number = $request->input('phone_number');
-            $storeSetting->second_phone_number = $request->input('second_phone_number');
+            $storeSetting->second_phone_number = $request->input('second_phone_number');            
             $storeSetting->save();
 
-            return response()->json(['message' => 'Store setting added successfully', 'data' => $storeSetting], 201);
+            return response()->json(['message' => 'Store setting created successfully', 'data' => $storeSetting], 201);
+
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error adding store setting: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Error creating store setting: ' . $e->getMessage()], 500);
+        
         }
     }
 
@@ -71,6 +99,13 @@ class StoreSettingController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $user = Auth::user();
+
+        // Only admin can update store settings
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'logo_url' => 'sometimes|required|string|max:500',
@@ -88,8 +123,6 @@ class StoreSettingController extends Controller
             return response()->json(['message' => 'Store setting not found'], 404);
         }
 
-        //TODO: chick if user is admin
-
         try {
             $storeSetting->name = $request->input('name', $storeSetting->name);
             $storeSetting->logo_url = $request->input('logo_url', $storeSetting->logo_url);
@@ -103,6 +136,7 @@ class StoreSettingController extends Controller
             $storeSetting->save();
 
             return response()->json(['message' => 'Store setting updated successfully', 'data' => $storeSetting], 200);
+
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error updating store setting: ' . $e->getMessage()], 500);
         }
@@ -113,6 +147,12 @@ class StoreSettingController extends Controller
      */
     public function destroy($id)
     {
+        $user = Auth::user();
+        // Only admin can delete store settings
+        if ($user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $storeSetting = StoreSetting::find($id);
         if ($storeSetting) {
             $storeSetting->delete();

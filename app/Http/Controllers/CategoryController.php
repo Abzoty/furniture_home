@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
 
+use Illuminate\Routing\Controller;
+
 class CategoryController extends Controller
 {
     public function __construct()
@@ -26,6 +28,7 @@ class CategoryController extends Controller
                 'message' => 'Categories retrieved successfully',
                 'data' => $categories
             ], 200);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error retrieving categories',
