@@ -11,18 +11,33 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    public function __construct()
+    {
+        // Admin-only routes
+        $this->middleware(['auth:sanctum', 'role:admin'])->only(['store', 'update', 'destroy']);
+        
+        // Public routes for customers (index, show) - no auth required
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $products = Product::all();
-        foreach ($products as $product) {
-            $product->image = ProductImage::where('product_id', $product->id)->first()->value('image_url');
-        }
+        try {
+            $products = Product::with(['categories', 'images'])->get();
 
-        return response()->json($products);
-        // return view('products.index', compact('products'));
+            return response()->json([
+                'message' => 'Products retrieved successfully',
+                'data' => $products
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving products',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -30,62 +45,68 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'string',
-            'price' => 'required|numeric|min:0|max:99999999.99',
-
-            // Categories validation - array of category objects/data
-            'categories' => 'array|max:10',
-            'categories.*.name' => 'required|string|max:255|exists:categories,name',
-
-            // Images validation - array of image objects/data
-            'images' => 'array|max:10',
-            'images.*.url' => 'required|url|max:2048',
-        ]);
-
         try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'sometimes|string',
+                'price' => 'required|numeric|min:0|max:99999999.99',
+                'categories' => 'sometimes|array|max:10',
+                'categories.*.name' => 'required|string|max:255|exists:categories,name',
+                'images' => 'sometimes|array|max:10',
+                'images.*.url' => 'required|url|max:2048',
+            ]);
+
             DB::beginTransaction();
 
-            // Create the product
-            $product = new Product();
-            $product->name = $request->input('name');
-            $product->description = $request->input('description');
-            $product->price = $request->input('price');
-            $product->save();
+            $product = Product::create([
+                'name' => $request->name,
+                'description' => $request->description ?? '',
+                'price' => $request->price
+            ]);
 
             // Create categories
             if ($request->has('categories') && is_array($request->categories)) {
                 foreach ($request->categories as $categoryData) {
-                    $category = new ProductCategory();
-                    $category->product_id = $product->id;
-                    $category->category_id = Category::where('name', $categoryData['name'])->value('id');
-                    $category->save();
+                    $category = Category::where('name', $categoryData['name'])->first();
+                    if ($category) {
+                        ProductCategory::create([
+                            'product_id' => $product->id,
+                            'category_id' => $category->id
+                        ]);
+                    }
                 }
             }
 
             // Create images
             if ($request->has('images') && is_array($request->images)) {
                 foreach ($request->images as $imageData) {
-                    $image = new ProductImage();
-                    $image->product_id = $product->id;
-                    $image->image_url = $imageData['url'];
-                    $image->save();
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url' => $imageData['url']
+                    ]);
                 }
             }
 
             DB::commit();
 
-            // Load relationships for response
             $product->load(['categories', 'images']);
 
             return response()->json([
-                'message' => 'Product added successfully',
-                'product' => $product
+                'message' => 'Product created successfully',
+                'data' => $product
             ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(['message' => 'Error adding product: ' . $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Error creating product',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -94,88 +115,111 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = Product::find($id);
-        if ($product) {
-            $product_categories = ProductCategory::where('product_id', $id)->get();
-            $product_images = ProductImage::where('product_id', $id)->get();
-            return response()->json([
-                'product' => $product,
-                'product_categories' => $product_categories,
-                'product_images' => $product_images,
-            ]);
-        }
-        return response()->json(['message' => 'Product not found'], 404);
-    }
+        try {
+            $product = Product::with(['categories.category', 'images'])->findOrFail($id);
 
+            return response()->json([
+                'message' => 'Product retrieved successfully',
+                'data' => $product
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving product',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'string',
-            'price' => 'required|numeric|min:0|max:99999999.99',
-
-            // Categories validation - array of category objects/data
-            'categories' => 'array|max:10',
-            'categories.*.name' => 'required|string|max:255|exists:categories,name',
-
-            // Images validation - array of image objects/data
-            'images' => 'array|max:10',
-            'images.*.url' => 'required|url|max:2048',
-        ]);
-
         try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'sometimes|string',
+                'price' => 'required|numeric|min:0|max:99999999.99',
+                'categories' => 'sometimes|array|max:10',
+                'categories.*.name' => 'required|string|max:255|exists:categories,name',
+                'images' => 'sometimes|array|max:10',
+                'images.*.url' => 'required|url|max:2048',
+            ]);
+
+            $product = Product::findOrFail($id);
+
             DB::beginTransaction();
 
-            $product = Product::find($id);
-            if (!$product) {
-                DB::rollback();
-                return response()->json(['message' => 'Product not found'], 404);
-            }
+            $product->update([
+                'name' => $request->name,
+                'description' => $request->description ?? $product->description,
+                'price' => $request->price
+            ]);
 
-            // Update product details
-            $product->name = $request->input('name');
-            $product->description = $request->input('description');
-            $product->price = $request->input('price');
-            $product->save();
-
-            // Delete existing categories and images (more efficient way)
-            ProductCategory::where('product_id', $product->id)->delete();
-            ProductImage::where('product_id', $product->id)->delete();
-
-            // Create new categories
-            if ($request->has('categories') && is_array($request->categories)) {
-                foreach ($request->categories as $categoryData) {
-                    $category = new ProductCategory();
-                    $category->product_id = $product->id;
-                    $category->category_id = Category::where('name', $categoryData['name'])->value('id');
-                    $category->save();
+            // Update categories if provided
+            if ($request->has('categories')) {
+                // Delete existing categories
+                ProductCategory::where('product_id', $product->id)->delete();
+                
+                // Create new categories
+                if (is_array($request->categories)) {
+                    foreach ($request->categories as $categoryData) {
+                        $category = Category::where('name', $categoryData['name'])->first();
+                        if ($category) {
+                            ProductCategory::create([
+                                'product_id' => $product->id,
+                                'category_id' => $category->id
+                            ]);
+                        }
+                    }
                 }
             }
 
-            // Create new images
-            if ($request->has('images') && is_array($request->images)) {
-                foreach ($request->images as $imageData) {
-                    $image = new ProductImage();
-                    $image->product_id = $product->id;
-                    $image->image_url = $imageData['url'];
-                    $image->save();
+            // Update images if provided
+            if ($request->has('images')) {
+                // Delete existing images
+                ProductImage::where('product_id', $product->id)->delete();
+                
+                // Create new images
+                if (is_array($request->images)) {
+                    foreach ($request->images as $imageData) {
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'image_url' => $imageData['url']
+                        ]);
+                    }
                 }
             }
 
             DB::commit();
 
-            $product->load(['categories', 'images']);
+            $product->load(['categories.category', 'images']);
+
             return response()->json([
                 'message' => 'Product updated successfully',
-                'product' => $product
+                'data' => $product
             ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
         } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(['message' => 'Error updating product: ' . $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Error updating product',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -184,11 +228,33 @@ class ProductController extends Controller
      */
     public function destroy($id)
     {
-        $product = Product::find($id);
-        if ($product) {
+        try {
+            $product = Product::findOrFail($id);
+            
+            DB::beginTransaction();
+            
+            // Delete related records
+            ProductCategory::where('product_id', $id)->delete();
+            ProductImage::where('product_id', $id)->delete();
+            
             $product->delete();
-            return response()->json(['message' => 'Product deleted successfully']);
+            
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Product deleted successfully'
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'message' => 'Error deleting product',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Product not found'], 404);
     }
 }
