@@ -4,17 +4,52 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\PaymentDetail;
+use App\Models\PaymentDetail as Payment;
+use App\Traits\FiltersByRole;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
+
 
 class PaymentController extends Controller
 {
+    use FiltersByRole;
+
+    public function __construct()
+    {
+        $this->middleware(['auth:sanctum']);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $payments = PaymentDetail::all();
-        return response()->json($payments);
+        try {
+            $user = Auth::user();
+
+            if ($user->role === 'admin') {
+                $payments = Payment::with(['order'])->get();
+            } else {
+                // Customer can only see their own cart items
+                $payments = Payment::with(['Order'])
+                    ->whereHas('order', function ($query) use ($user) {
+                        $query->where('customer_id', $user->id);
+                    })->get();
+            }
+
+            return response()->json([
+                'message' => 'Payments retrieved successfully',
+                'data' => $payments
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving payments',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -22,23 +57,42 @@ class PaymentController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'order_id' => 'required|integer|exists:orders,id',
-            'payment_method' => 'required|string|max:50',
-            'status' => 'required|string|max:20|in:pending,completed,failed'
-        ]);
-
         try {
-            $payment = new PaymentDetail();
-            $payment->order_id = $request->order_id;
-            $payment->amount = Order::findOrFail($request->order_id)->total_amount;
-            $payment->payment_method = $request->payment_method;
-            $payment->payment_status = $request->status;
-            $payment->save();
+            $request->validate([
+                'order_id' => 'required|integer|exists:orders,id',
+                'payment_method' => 'required|string|max:50',
+                'status' => 'required|string|max:20|in:pending,completed,failed'
+            ]);
 
-            return response()->json($payment, 201);
+            $order = Order::findOrFail($request->order_id);
+
+            if (!$this->canAccessResource($order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only create payments for your own orders.'
+                ], 403);
+            }
+
+            $payment = PaymentDetail::create([
+                'order_id' => $order->id,
+                'amount' => $order->total_amount,
+                'payment_method' => $request->payment_method,
+                'payment_status' => $request->status
+            ]);
+
+            return response()->json([
+                'message' => 'Payment created successfully',
+                'data' => $payment
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to create payment', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Error creating payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -47,11 +101,29 @@ class PaymentController extends Controller
      */
     public function show($id)
     {
-        $payment = PaymentDetail::find($id);
-        if ($payment) {
-            return response()->json($payment);
+        try {
+            $payment = PaymentDetail::with('order')->findOrFail($id);
+
+            if (!$this->canAccessResource($payment->order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only view your own payments.'
+                ], 403);
+            }
+
+            return response()->json([
+                'message' => 'Payment retrieved successfully',
+                'data' => $payment
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Payment not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Payment not found'], 404);
     }
 
     /**
@@ -59,17 +131,41 @@ class PaymentController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|string|max:20|in:pending,completed,failed'
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|string|max:20|in:pending,completed,failed'
+            ]);
 
-        $payment = PaymentDetail::find($id);
-        if ($payment) {
+            $payment = PaymentDetail::with('order')->findOrFail($id);
+
+            if (!$this->canAccessResource($payment->order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only update your own payments.'
+                ], 403);
+            }
+
             $payment->payment_status = $request->status;
             $payment->save();
-            return response()->json($payment);            
+
+            return response()->json([
+                'message' => 'Payment updated successfully',
+                'data' => $payment
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Payment not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error updating payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Payment not found'], 404);
     }
 
     /**
@@ -77,11 +173,29 @@ class PaymentController extends Controller
      */
     public function destroy($id)
     {
-        $payment = PaymentDetail::find($id);
-        if ($payment) {
+        try {
+            $payment = PaymentDetail::with('order')->findOrFail($id);
+
+            if (!$this->canAccessResource($payment->order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only delete your own payments.'
+                ], 403);
+            }
+
             $payment->delete();
-            return response()->json(['message' => 'Payment deleted successfully']);
+
+            return response()->json([
+                'message' => 'Payment deleted successfully'
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Payment not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error deleting payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Payment not found'], 404);
     }
 }

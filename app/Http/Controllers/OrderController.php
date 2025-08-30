@@ -9,16 +9,46 @@ use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use App\Traits\FiltersByRole;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
+    use FiltersByRole;
+
+    public function __construct()
+    {
+        $this->middleware(['auth:sanctum']);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $orders = Order::all();
-        return response()->json($orders);
+        try {
+            $user = Auth::user();
+
+            if ($user->role === 'admin') {
+                $orders = Order::with(['orderitems', 'statusHistory'])->get();
+            } else {
+                // Customer can only see their own orders
+                $orders = Order::with(['orderitems', 'statusHistory'])
+                    ->where('customer_id', $user->id)
+                    ->get();
+            }
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully',
+                'data' => $orders
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving orders',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -70,7 +100,7 @@ class OrderController extends Controller
             $order_status = new OrderStatusHistory();
             $order_status->order_id = $order->id;
             $order_status->status = $request->input('status');
-            $order_status->save();            
+            $order_status->save();
 
             // Create order items
             foreach ($orderItems as $itemData) {
@@ -96,12 +126,30 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        $order = Order::find($id);
-        if ($order) {
-            $order->items = OrderItem::where('order_id', $id)->get();
-            return response()->json($order);
+        try {
+            $order = Order::with(['orderitems', 'statusHistory'])->findOrFail($id);
+
+            // Check if user can access this cart item
+            if (!$this->canAccessResource($order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only view your own cart items.'
+                ], 403);
+            }
+
+            return response()->json([
+                'message' => 'Cart item retrieved successfully',
+                'data' => $order
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Cart item not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving cart item',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Order not found'], 404);
     }
 
 
@@ -110,11 +158,37 @@ class OrderController extends Controller
      */
     public function destroy($id)
     {
-        $order = Order::find($id);
-        if ($order) {
+        try{
+            $order = Order::findOrFail($id);
+
+            // Check if user can access this order
+            if (!$this->canAccessResource($order)) {
+                return response()->json([
+                    'message' => 'Access denied. You can only delete your own orders.'
+                ], 403);
+            }
+
+            // Delete related order items and status history first
+            OrderItem::where('order_id', $order->id)->delete();
+            OrderStatusHistory::where('order_id', $order->id)->delete();
+
+            // Then delete the order itself
             $order->delete();
-            return response()->json(['message' => 'Order deleted successfully']);
+
+            return response()->json([
+                'message' => 'Order deleted successfully'
+            ], 200);
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error deleting order',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        return response()->json(['message' => 'Order not found'], 404);
     }
 }
